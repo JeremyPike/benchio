@@ -1,0 +1,29 @@
+#!/bin/bash
+
+# Slurm job options (name, compute nodes, job time)
+#SBATCH --job-name=benchio
+#SBATCH --time=00:05:00
+#SBATCH --output=%x-%j.out
+#SBATCH --nodes=8
+#SBATCH --tasks-per-node=144
+#SBATCH --cpus-per-task=1
+
+source /home/gw4ops-i3/pikeja.gw4ops-i3/benchio-spack/spack/share/spack/setup-env.sh
+spack env activate /home/gw4ops-i3/pikeja.gw4ops-i3/benchio-spack/benchio-env
+
+# Set the number of threads to 1
+#   This prevents any threaded system libraries from automatically
+#   using threading.
+
+export OMP_NUM_THREADS=1
+export SRUN_CPUS_PER_TASK=${SLURM_CPUS_PER_TASK}
+
+ulimit -s unlimited
+
+# Launch the parallel job
+
+# Magic setting to improve IO performance with default MPI
+export FI_OFI_RXM_SAR_LIMIT=64K
+
+srun --unbuffered --distribution=block:block \
+     ./benchio 128 128 128 local mpiio
